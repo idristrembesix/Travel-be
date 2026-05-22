@@ -19,4 +19,8 @@
     // Relasi: 1 Destinasi bisa memiliki banyak Paket Tur
     @OneToMany(() => TourPackage, (tourPackage) => tourPackage.destination)
     packages!: TourPackage[];
+
+    // === Tambahkan kolom ini di bagian bawah ===
+    @Column({ type: 'int', nullable: true })
+    estimatedPrice!: number;
     }

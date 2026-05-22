@@ -9,30 +9,31 @@
         @InjectRepository(Participant) private participantRepo: Repository<Participant>,
     ) {}
 
-        async findAll(page: number = 1, limit: number = 10, search?: string) {
-            const skip = (page - 1) * limit;
+async findAll(page: number = 1, limit: number = 10, search?: string) {
+        const skip = (page - 1) * limit;
 
-            // Cari di kolom name ATAU email
-            const whereKondisi = search ? [
-            { name: Like(`%${search}%`) },
-            { email: Like(`%${search}%`) }
-            ] : {};
+        // PERBAIKAN: Gunakan nama kolom yang BENAR sesuai Entity
+        const whereKondisi = search ? [
+            { fullName: Like(`%${search}%`) },
+            { identityNumber: Like(`%${search}%`) },
+            { phoneNumber: Like(`%${search}%`) }
+        ] : {};
 
-            const [data, total] = await this.participantRepo.findAndCount({
+        const [data, total] = await this.participantRepo.findAndCount({
             where: whereKondisi,
             take: limit,
             skip: skip,
-            });
+        });
 
-            return {
+        return {
             data,
             meta: {
                 totalData: total,
                 halamanSekarang: page,
                 totalHalaman: Math.ceil(total / limit),
             },
-            };
-        }
+        };
+    }
         
     async removeBulk(ids: string[]) {
     const result = await this.participantRepo.delete(ids);

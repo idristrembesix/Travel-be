@@ -1,11 +1,11 @@
         // src/registrations/registrations.service.ts
         import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
         import { InjectRepository } from '@nestjs/typeorm';
-        import { Repository } from 'typeorm';
         import { Registration, RegistrationStatus } from './entities/registration.entity';
         import { Participant } from '../participants/entities/participant.entity';
         import { TourPackage } from '../packages/entities/tour-package.entity';
         import { CreateRegistrationDto } from './dto/create-registration.dto';
+        import { Repository, Like, Brackets } from 'typeorm';
 
         @Injectable()
         export class RegistrationsService {
@@ -81,29 +81,41 @@
         }
         // Tambahkan fungsi ini di bawah fungsi updateStatus
         // Parameter default: kalau tidak disuruh, tampilkan halaman 1, maksimal 10 data
-    async findAll(page: number = 1, limit: number = 10, status?: string) {
+        async findAll(page: number = 1, limit: number = 10, search?: string, status?: string) {
         const skip = (page - 1) * limit;
 
-        // Logika Skeptis: Jika parameter status dikirim (misal "PENDING"), cari yang persis sama.
-        // Kita gunakan "as any" untuk mencegah TypeScript protes soal Enum.
-        const whereKondisi = status ? { status: status as any } : {};
+        const query = this.regRepo.createQueryBuilder('registration')
+            .leftJoinAndSelect('registration.participant', 'participant')
+            .leftJoinAndSelect('registration.package', 'package');
 
-        const [data, total] = await this.regRepo.findAndCount({
-        where: whereKondisi,
-        take: limit,
-        skip: skip,
-        });
+        if (status) {
+            query.andWhere('registration.status = :status', { status });
+        }
+
+        if (search) {
+            // JURUS MUTLAK: Brackets mengunci logika OR agar tidak bocor, 
+            // LOWER() memaksa pencarian mengabaikan huruf besar/kecil!
+            query.andWhere(new Brackets(qb => {
+                qb.where('LOWER(participant.fullName) LIKE LOWER(:search)', { search: `%${search}%` })
+                  .orWhere('LOWER(participant.identityNumber) LIKE LOWER(:search)', { search: `%${search}%` })
+                  .orWhere('LOWER(package.title) LIKE LOWER(:search)', { search: `%${search}%` });
+            }));
+        }
+
+        query.orderBy('registration.registeredAt', 'DESC');
+
+        const [data, total] = await query.skip(skip).take(limit).getManyAndCount();
 
         return {
-        data,
-        meta: {
-            totalData: total,
-            halamanSekarang: page,
-            totalHalaman: Math.ceil(total / limit),
-        },
+            data,
+            meta: {
+                totalData: total,
+                halamanSekarang: page,
+                totalHalaman: Math.ceil(total / limit),
+            },
         };
     }
-        async removeBulk(ids: string[]) {
+            async removeBulk(ids: string[]) {
         // TypeORM mengeksekusi query: DELETE FROM registrations WHERE id IN (id1, id2...)
         const result = await this.regRepo.delete(ids);
         return { message: `${result.affected} data registrasi berhasil dihapus` };
