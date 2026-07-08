@@ -93,12 +93,10 @@
         }
 
         if (search) {
-            // JURUS MUTLAK: Brackets mengunci logika OR agar tidak bocor, 
-            // LOWER() memaksa pencarian mengabaikan huruf besar/kecil!
             query.andWhere(new Brackets(qb => {
                 qb.where('LOWER(participant.fullName) LIKE LOWER(:search)', { search: `%${search}%` })
-                  .orWhere('LOWER(participant.identityNumber) LIKE LOWER(:search)', { search: `%${search}%` })
-                  .orWhere('LOWER(package.title) LIKE LOWER(:search)', { search: `%${search}%` });
+                    .orWhere('LOWER(participant.identityNumber) LIKE LOWER(:search)', { search: `%${search}%` })
+                    .orWhere('LOWER(package.title) LIKE LOWER(:search)', { search: `%${search}%` });
             }));
         }
 

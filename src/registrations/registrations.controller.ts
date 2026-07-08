@@ -42,6 +42,8 @@ import { UserRole } from '../users/entities/user.entity';
             @Query('status') status?: string ,// <-- Menangkap filter status dari URL
             @Query('search') search? : string
         ) {
+            // 3. BUKTIKAN BACKEND MENERIMA DATA DARI FE
+            console.log('🎯 BACKEND MENERIMA SEARCH:', search);
             return this.registrationsService.findAll(Number(page), Number(limit), status, search);
         }
         // Tambahkan endpoint ini. Wajib ditaruh di atas fungsi dengan parameter /:id (jika ada)
